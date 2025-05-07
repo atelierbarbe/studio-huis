@@ -1,29 +1,34 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import jsPDF from "jspdf";
 
-export default function BedanktPagina() {
+function SearchParamsWrapper({ onDataReady }) {
   const searchParams = useSearchParams();
+  const data = {
+    naam: searchParams.get("naam") || "",
+    woningtype: searchParams.get("woningtype") || "",
+    bouwjaar: searchParams.get("bouwjaar") || "",
+    verwarmingssysteem: searchParams.get("verwarmingssysteem") || "",
+    epc: searchParams.get("epc") || "",
+    interesse: searchParams.getAll("interesse") || [],
+  };
+
+  useEffect(() => {
+    onDataReady(data);
+  }, []);
+
+  return null;
+}
+
+export default function BedanktPagina() {
   const [email, setEmail] = useState("");
   const [telefoon, setTelefoon] = useState("");
   const [toestemming, setToestemming] = useState(false);
   const [intakeData, setIntakeData] = useState(null);
   const [advies, setAdvies] = useState("");
   const [foutmelding, setFoutmelding] = useState(null);
-
-  useEffect(() => {
-    const data = {
-      naam: searchParams.get("naam") || "",
-      woningtype: searchParams.get("woningtype") || "",
-      bouwjaar: searchParams.get("bouwjaar") || "",
-      verwarmingssysteem: searchParams.get("verwarmingssysteem") || "",
-      epc: searchParams.get("epc") || "",
-      interesse: searchParams.getAll("interesse") || [],
-    };
-    setIntakeData(data);
-  }, [searchParams]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -78,67 +83,73 @@ export default function BedanktPagina() {
   };
 
   return (
-    <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 font-sans">
-      <div className="bg-white text-blue-600 flex flex-col justify-center px-8 py-16">
-        <div className="max-w-md mx-auto">
-          <h1 className="text-4xl font-bold mb-4">Bedankt voor je aanvraag!</h1>
-          <p className="text-lg">
-            We stellen je adviesrapport samen. Laat hieronder nog even je contactgegevens achter. Na bevestiging start de download automatisch.
-          </p>
-          {foutmelding && (
-            <p className="mt-4 text-red-600 font-medium">⚠️ {foutmelding}</p>
-          )}
+    <>
+      <Suspense fallback={<p className="text-white">Gegevens worden geladen...</p>}>
+        <SearchParamsWrapper onDataReady={setIntakeData} />
+      </Suspense>
+
+      <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 font-sans">
+        <div className="bg-white text-blue-600 flex flex-col justify-center px-8 py-16">
+          <div className="max-w-md mx-auto">
+            <h1 className="text-4xl font-bold mb-4">Bedankt voor je aanvraag!</h1>
+            <p className="text-lg">
+              We stellen je adviesrapport samen. Laat hieronder nog even je contactgegevens achter. Na bevestiging start de download automatisch.
+            </p>
+            {foutmelding && (
+              <p className="mt-4 text-red-600 font-medium">⚠️ {foutmelding}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-blue-600 text-white flex flex-col justify-center px-8 py-16">
+          <div className="max-w-md mx-auto w-full">
+            <h2 className="text-2xl font-semibold mb-6">Contactgegevens</h2>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label className="block mb-2 font-medium">E-mailadres</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="block w-full bg-white text-blue-800 rounded px-4 py-2 border border-white"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2 font-medium">Telefoon (optioneel)</label>
+                <input
+                  type="tel"
+                  value={telefoon}
+                  onChange={(e) => setTelefoon(e.target.value)}
+                  className="block w-full bg-white text-blue-800 rounded px-4 py-2 border border-white"
+                />
+              </div>
+
+              <div className="flex items-start">
+                <input
+                  type="checkbox"
+                  checked={toestemming}
+                  onChange={(e) => setToestemming(e.target.checked)}
+                  className="mr-2 mt-1"
+                />
+                <span className="text-sm">
+                  Ik geef toestemming om mijn gegevens te gebruiken voor marketing- en opvolgingsdoeleinden.
+                </span>
+              </div>
+
+              <button
+                type="submit"
+                className="bg-white text-blue-600 px-6 py-3 rounded shadow hover:bg-blue-100"
+                disabled={!email || !toestemming || !intakeData}
+              >
+                Genereer en download mijn rapport
+              </button>
+            </form>
+          </div>
         </div>
       </div>
-
-      <div className="bg-blue-600 text-white flex flex-col justify-center px-8 py-16">
-        <div className="max-w-md mx-auto w-full">
-          <h2 className="text-2xl font-semibold mb-6">Contactgegevens</h2>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block mb-2 font-medium">E-mailadres</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="block w-full bg-white text-blue-800 rounded px-4 py-2 border border-white"
-              />
-            </div>
-
-            <div>
-              <label className="block mb-2 font-medium">Telefoon (optioneel)</label>
-              <input
-                type="tel"
-                value={telefoon}
-                onChange={(e) => setTelefoon(e.target.value)}
-                className="block w-full bg-white text-blue-800 rounded px-4 py-2 border border-white"
-              />
-            </div>
-
-            <div className="flex items-start">
-              <input
-                type="checkbox"
-                checked={toestemming}
-                onChange={(e) => setToestemming(e.target.checked)}
-                className="mr-2 mt-1"
-              />
-              <span className="text-sm">
-                Ik geef toestemming om mijn gegevens te gebruiken voor marketing- en opvolgingsdoeleinden.
-              </span>
-            </div>
-
-            <button
-              type="submit"
-              className="bg-white text-blue-600 px-6 py-3 rounded shadow hover:bg-blue-100"
-              disabled={!email || !toestemming || !intakeData}
-            >
-              Genereer en download mijn rapport
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
+    </>
   );
 }
