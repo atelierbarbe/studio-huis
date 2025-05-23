@@ -10,7 +10,7 @@ export default function IntakePagina() {
     bouwjaar: "",
     verwarmingssysteem: "",
     epc: "",
-    interesse: []
+    interesse: [],
   });
 
   const router = useRouter();
@@ -30,15 +30,37 @@ export default function IntakePagina() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(form);
-    router.push("/bedankt");
+
+    const payload = {
+      ...form,
+      email: "",     // optioneel veld voor nu
+      telefoon: "",  // optioneel veld voor nu
+    };
+
+    try {
+      const res = await fetch("/api/intake", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await res.json();
+
+      if (res.ok && result.id) {
+        router.push(`/bedankt?id=${result.id}`);
+      } else {
+        console.error("Fout bij opslaan intake");
+      }
+    } catch (err) {
+      console.error("Netwerkfout:", err);
+    }
   };
 
   return (
-    <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 font-sans">
-      {/* Linkerzijde - Uitleg */}
+    <div className="grid grid-cols-1 md:grid-cols-2">
+      {/* Linkerzijde */}
       <div className="bg-white text-blue-600 flex flex-col justify-center px-8 py-16">
         <div className="max-w-md mx-auto">
           <h1 className="text-4xl font-bold mb-4">Renovatieadvies op maat</h1>
@@ -48,7 +70,7 @@ export default function IntakePagina() {
         </div>
       </div>
 
-      {/* Rechterzijde - Formulier */}
+      {/* Rechterzijde */}
       <div className="bg-blue-600 text-white flex flex-col justify-center px-8 py-16">
         <div className="max-w-md mx-auto w-full">
           <h2 className="text-2xl font-semibold mb-6">Start je intake</h2>
@@ -63,6 +85,7 @@ export default function IntakePagina() {
                 onChange={handleChange}
                 className="block w-full bg-white text-blue-800 rounded px-4 py-2 border border-white"
                 placeholder="Voornaam en naam"
+                required
               />
             </div>
 
@@ -73,6 +96,7 @@ export default function IntakePagina() {
                 value={form.woningtype}
                 onChange={handleChange}
                 className="block w-full bg-white text-blue-800 rounded px-4 py-2 border border-white"
+                required
               >
                 <option value="">Maak een keuze</option>
                 <option value="rijwoning">Rijwoning</option>
