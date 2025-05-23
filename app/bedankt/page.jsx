@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
 
-export default function BedanktPagina() {
+function BedanktContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const intakeId = searchParams.get("id");
@@ -52,12 +52,7 @@ export default function BedanktPagina() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          naam: intakeData.naam,
-          woningtype: intakeData.woningtype,
-          bouwjaar: intakeData.bouwjaar,
-          verwarmingssysteem: intakeData.verwarmingssysteem,
-          epc: intakeData.epc,
-          interesse: intakeData.interesse,
+          ...intakeData,
           email,
           telefoon,
         }),
@@ -69,18 +64,11 @@ export default function BedanktPagina() {
         throw new Error("Geen ID ontvangen van Supabase.");
       }
 
-      const newIntakeId = intakeResult.id;
-
       const adviesResponse = await fetch("/api/genereer-advies", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          naam: intakeData.naam,
-          woningtype: intakeData.woningtype,
-          bouwjaar: intakeData.bouwjaar,
-          verwarmingssysteem: intakeData.verwarmingssysteem,
-          epc: intakeData.epc,
-          interesse: intakeData.interesse,
+          ...intakeData,
           email,
           telefoon,
         }),
@@ -91,7 +79,7 @@ export default function BedanktPagina() {
       localStorage.setItem("advies", adviesResult.advies || "");
       localStorage.setItem("contact", JSON.stringify({ email, telefoon }));
 
-      router.push(`/rapport?id=${newIntakeId}`);
+      router.push(`/rapport?id=${intakeResult.id}`);
     } catch (err) {
       console.error("❌ Fout bij intake of advies:", err);
       setFoutmelding("Er liep iets fout bij het verwerken van je aanvraag.");
@@ -103,6 +91,7 @@ export default function BedanktPagina() {
   return (
     <div className="flex flex-grow">
       <div className="grid grid-cols-1 md:grid-cols-2 flex-grow pb-30">
+        {/* Linkerzijde */}
         <div className="bg-white text-blue-600 flex flex-col justify-center px-8 py-16">
           <div className="max-w-md mx-auto">
             <h1 className="text-4xl font-bold mb-4">Bedankt voor je aanvraag!</h1>
@@ -113,6 +102,7 @@ export default function BedanktPagina() {
           </div>
         </div>
 
+        {/* Rechterzijde */}
         <div className="bg-blue-600 text-white flex flex-col justify-center px-8 py-16 pb-30">
           <div className="max-w-md mx-auto w-full">
             <h2 className="text-2xl font-semibold mb-6">Contactgegevens</h2>
@@ -164,5 +154,13 @@ export default function BedanktPagina() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function BedanktPagina() {
+  return (
+    <Suspense fallback={<p className="p-8 text-blue-600">Even geduld… laden...</p>}>
+      <BedanktContent />
+    </Suspense>
   );
 }
